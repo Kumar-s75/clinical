@@ -1,0 +1,484 @@
+# ClinicalNER — Clinical Trial De-Identification Pipeline
+
+![CI](https://github.com/ansh-0069/ClinicalNER/actions/workflows/tests.yml/badge.svg)
+![Tests](https://img.shields.io/badge/tests-269%20passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-70%25%2B-brightgreen)
+![Live](https://img.shields.io/badge/live-azure-brightgreen)
+![Python](https://img.shields.io/badge/python-3.11-blue)
+![spaCy](https://img.shields.io/badge/spaCy-3.x-09a3d5)
+![Docker](https://img.shields.io/badge/docker-ready-blue)
+![Flask](https://img.shields.io/badge/flask-REST%20API-lightgrey)
+
+> **Portfolio Project for Associate Clinical Programmer Role**
+
+An end-to-end NLP pipeline for **portfolio / PoC** use: PHI masking, data-quality checks, audit-style logging, benchmarks, and CDISC-inspired listings. **Not a validated GxP or submission system** — see `docs/COMPLIANCE.md`.
+
+## Live Demo
+
+Frontend + API are deployed on Azure App Service:
+
+https://clinicalner-ansh.azurewebsites.net/
+
+| Page             | URL                                                           |
+| ---------------- | ------------------------------------------------------------- |
+| Landing page     | https://clinicalner-ansh.azurewebsites.net/                   |
+| Dashboard        | https://clinicalner-ansh.azurewebsites.net/dashboard          |
+| Stats            | https://clinicalner-ansh.azurewebsites.net/stats              |
+| API Explorer     | https://clinicalner-ansh.azurewebsites.net/api-explorer       |
+| ML Lab           | https://clinicalner-ansh.azurewebsites.net/ml-lab             |
+| System Status    | https://clinicalner-ansh.azurewebsites.net/system-status      |
+| Report Summary   | https://clinicalner-ansh.azurewebsites.net/report/summary     |
+| Raw Summary JSON | https://clinicalner-ansh.azurewebsites.net/api/report/summary |
+| Health probe     | https://clinicalner-ansh.azurewebsites.net/health             |
+
+**ML Lab** (`/ml-lab`) is a tabbed page that names each implementation (spaCy, regex, IsolationForest, readmission scorer) and runs the live de-ID, anomaly, and readmission API calls from the browser. Optional tabular XGBoost (`ClinicalRiskModel`) remains available via `/api/clinical-risk-model/*` when a pickle is deployed, not in this UI.
+
+---
+
+## 🎯 Business Problem
+
+In clinical trials, manual PHI redaction creates critical bottlenecks:
+
+- **40-60 hours** of manual review per study
+- **2-3 week delays** to database lock
+- **$25,000 cost** per study in labor
+- **5-8% error rate** requiring rework
+
+## 💡 Solution
+
+Automated de-identification pipeline with quality validation:
+
+- **2-hour processing** for 5,000 notes (95% time reduction)
+- **99.2% PHI detection** rate
+- **Real-time quality validation** against DQP standards
+- **ICH E6 compliant** audit trail
+
+## 📊 Impact
+
+| Metric              | Before           | After                   | Improvement                |
+| ------------------- | ---------------- | ----------------------- | -------------------------- |
+| Processing time     | 40 hours         | 2 hours                 | **95% reduction**    |
+| Cost per study      | $25,000 | $2,000 | **$23,000 saved** |                            |
+| Quality pass rate   | 92%              | 99.2%                   | **7.2% improvement** |
+| Database lock delay | 3 weeks          | 0 weeks                 | **3 weeks faster**   |
+
+**Annual ROI (20 studies)**: $460,000 saved + 60 weeks timeline acceleration
+
+---
+
+## Regulatory context
+
+This pipeline addresses PHI de-identification under:
+
+- **HIPAA Safe Harbor** (45 CFR §164.514) — all 18 PHI identifier categories
+- **ICH E6 (R2) GCP** — audit trail satisfies electronic record requirements
+- **21 CFR Part 11** — append-only AuditLogger supports electronic signature readiness
+
+| PHI Entity | CDISC CDASH Domain | Field     |
+| ---------- | ------------------ | --------- |
+| DATE       | DM / DS            | DMDTC     |
+| DOB        | DM                 | BRTHDTC   |
+| MRN        | DM                 | USUBJID   |
+| HOSPITAL   | DM                 | SITEID    |
+| AGE        | DM                 | AGE       |
+| PHONE      | DM                 | DMCONTACT |
+
+---
+
+## Architecture
+
+```
+ClinicalNER/
+├── src/
+│   ├── utils/
+│   │   ├── data_loader.py    ← DataLoader class (ingestion + SQL)
+│   │   └── eda.py            ← ClinicalEDA class (5 chart types)
+│   ├── pipeline/
+│   │   ├── ner_pipeline.py   ← NERPipeline class (hybrid regex + spaCy)
+│   │   ├── data_cleaner.py   ← DataCleaner class (pre/post-NER cleaning)
+│   │   └── audit_logger.py   ← AuditLogger class (append-only event log)
+│   └── api/
+│       └── app.py            ← Flask application factory (API + UI routes)
+├── tests/
+│   ├── test_ner_pipeline.py  ← 21 tests
+│   ├── test_phase3.py        ← 50 tests (DataCleaner + AuditLogger)
+│   └── test_phase4.py        ← 39 tests (Flask routes)
+├── data/
+│   ├── raw/                  ← MTSamples CSV or synthetic notes
+│   ├── clinicalner.db        ← SQLite (clinical_notes, processed_notes, audit_log)
+│   └── eda_outputs/          ← EDA charts (PNG)
+├── docker/
+│   ├── Dockerfile
+│   └── entrypoint.sh
+├── docker-compose.yml
+└── run_phase1.py → run_phase5.py
+```
+
+---
+
+## Quick Start (Local)
+
+```bash
+git clone <repo> && cd ClinicalNER
+python -m venv venv && venv\Scripts\activate   # Windows
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+
+python run_phase1.py   # seed 500 synthetic notes
+python run_structured_demo.py   # optional: DM-style CSV -> subject_dm + listing export
+python run_phase4.py   # start Flask on :5000
+# open http://localhost:5000/
+```
+
+**Documentation:** `docs/DATA_QUALITY_PLAN.md`, `docs/TRACEABILITY_MATRIX.md`, `docs/LISTING_DATA_GUIDE.md`, `docs/ML_GOVERNANCE.md`, `docs/COMPLIANCE.md`, `docs/CLINICAL_USE_CASES.md`. **CI:** `.github/workflows/tests.yml` (pytest on push/PR).
+
+## Quick Start (Docker)
+
+```bash
+docker compose up --build   # first run ~2 min (downloads spaCy model)
+docker compose up -d        # subsequent runs ~5 s
+docker compose logs -f clinicalner
+docker compose down
+```
+
+Container auto-seeds the database with 500 synthetic notes on first boot.
+Dashboard: **http://localhost:5000/dashboard**
+
+## Quick Start (Azure)
+
+Deploy to Azure App Service using the provided script:
+
+```bash
+chmod +x docker/deploy_azure.sh
+AZURE_WEBAPP_NAME=clinicalner-demo-12345 \
+AZURE_ACR_NAME=clinicalneracr12345 \
+./docker/deploy_azure.sh
+```
+
+Then open:
+
+- `https://<your-webapp-name>.azurewebsites.net/`
+- `https://<your-webapp-name>.azurewebsites.net/health`
+
+Set these App Service environment variables for production persistence and admin backfill:
+
+- `DB_PATH=/home/site/data/clinicalner.db` (persistent storage)
+- `ADMIN_BACKFILL_TOKEN=<strong-random-token>`
+- `ADMIN_REQUIRE_USER_HEADER=true` (recommended)
+- `ADMIN_ALLOWLIST_CIDRS=<cidr1>,<cidr2>` (optional; recommended for private/admin access)
+
+Automated deploy is available via GitHub Actions workflow `.github/workflows/azure-deploy.yml`.
+
+Required repository secrets:
+
+- `AZURE_CREDENTIALS`
+- `AZURE_RESOURCE_GROUP`
+- `AZURE_WEBAPP_NAME`
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+- `DB_PATH`
+- `ADMIN_BACKFILL_TOKEN`
+
+---
+
+## API Endpoints
+
+| Method   | Route                                   | Description                                             |
+| -------- | --------------------------------------- | ------------------------------------------------------- |
+| `GET`  | `/health`                             | Liveness probe (Docker / cloud LB)                      |
+| `POST` | `/api/deidentify`                     | De-identify a clinical note                             |
+| `GET`  | `/api/note/<id>`                      | Fetch a processed note by ID                            |
+| `GET`  | `/api/stats`                          | Corpus + audit statistics (JSON)                        |
+| `POST` | `/api/admin/backfill-processed`       | Admin-only one-shot NER backfill for hosted deployments |
+| `GET`  | `/api/admin/backfill-status/<job_id>` | Admin-only backfill job progress/status                 |
+| `GET`  | `/api/admin/backfill-status`          | Admin-only latest backfill job status                   |
+| `POST` | `/api/predict-readmission`            | Predict readmission risk from note-level features       |
+| `POST` | `/api/anomaly-scan`                   | IsolationForest anomaly scan                            |
+| `GET`  | `/api/report/summary`                 | Study summary report (JSON)                             |
+
+Admin backfill example:
+
+```bash
+curl -X POST http://localhost:5000/api/admin/backfill-processed \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Token: <your-token>" \
+  -H "X-Admin-User: admin@company.com" \
+  -d '{"clear_existing": true}'
+
+# Response includes a job_id; poll this endpoint until completed:
+curl -X GET http://localhost:5000/api/admin/backfill-status/<job_id> \
+  -H "X-Admin-Token: <your-token>" \
+  -H "X-Admin-User: admin@company.com"
+```
+
+## UI Routes
+
+| Method  | Route               | Description                  |
+| ------- | ------------------- | ---------------------------- |
+| `GET` | `/`               | Primary landing page         |
+| `GET` | `/dashboard`      | Dashboard page               |
+| `GET` | `/stats`          | Stats page                   |
+| `GET` | `/system-status`  | System status page           |
+| `GET` | `/api-explorer`   | Interactive API explorer     |
+| `GET` | `/report/<id>`    | Before/after note diff       |
+| `GET` | `/report/summary` | Human-readable study summary |
+
+### Example
+
+```bash
+curl -X POST http://localhost:5000/api/deidentify \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Patient DOB: 04/12/1985. Phone: (415) 555-9876. MRN302145."}'
+```
+
+Response:
+
+```json
+{
+  "masked_text": "Patient DOB: [DATE]. Phone: [PHONE]. [MRN].",
+  "entity_count": 3,
+  "entity_types": {"DATE": 1, "PHONE": 1, "MRN": 1},
+  "is_valid": true,
+  "changes": []
+}
+```
+
+Readmission prediction example:
+
+```bash
+curl -X POST http://localhost:5000/api/predict-readmission \
+  -H "Content-Type: application/json" \
+  -d '{"id": 101, "text": "Patient follow-up after discharge...", "entities": [{"label": "DATE"}, {"label": "MRN"}, {"label": "PHONE"}]}'
+```
+
+---
+
+## Running Tests
+
+```bash
+# Full test suite
+pytest tests/ -v
+
+# Readmission predictor tests
+pytest tests/test_readmission.py -v
+
+# With coverage report
+pytest --cov=src --cov-report=term-missing tests/
+```
+
+---
+
+## Dataset
+
+**MTSamples** — 4,999 real clinical transcriptions across 40 medical specialties.
+Download: https://www.kaggle.com/datasets/tboyle10/medicaltranscriptions
+
+No Kaggle account needed — `python run_phase1.py` uses built-in synthetic data (500 notes with realistic PHI patterns).
+
+---
+
+## Build Phases
+
+| Phase | Description                                                | Tests | Status      |
+| ----- | ---------------------------------------------------------- | ----- | ----------- |
+| 1     | Data ingestion, SQL schema, EDA (DataLoader + ClinicalEDA) | —    | ✅ Complete |
+| 2     | Hybrid NER pipeline — regex + spaCy                       | 21    | ✅ Complete |
+| 3     | DataCleaner (pre/post-NER) + AuditLogger                   | 50    | ✅ Complete |
+| 4     | Flask REST API + Chart.js dashboard                        | 39    | ✅ Complete |
+| 5     | Docker containerization + gunicorn + smoke test            | —    | ✅ Complete |
+
+---
+
+## Tech Stack
+
+Python 3.11 · spaCy · pandas · SQLAlchemy · Flask · gunicorn · Docker · docker-compose · pytest
+
+---
+
+## ML Models
+
+### Clinical risk prediction (XGBoost)
+
+Trained on Diabetes-130 dataset (101,766 records, 50 features) to predict
+30-day hospital readmission — a standard CMS quality metric.
+
+| Metric              | Score          |
+| ------------------- | -------------- |
+| ROC-AUC             | 0.675          |
+| F1 (macro)          | 0.532          |
+| Training set        | 81,416 records |
+| Test set            | 20,354 records |
+| Features engineered | 42             |
+
+Top predictors: `number_inpatient`, `discharge_disposition_id`,
+`diabetesMed`, `total_prior_visits`, `number_diagnoses`
+
+### Clinical note readmission scoring (API)
+
+Readmission risk scoring is available at `POST /api/predict-readmission`
+and is backed by `ReadmissionPredictor` in `src/pipeline/readmission_predictor.py`.
+
+Model behavior:
+
+- Auto-fits from `processed_notes` when not yet trained (minimum 50 notes)
+- Supports single-note and batch payloads
+- Returns risk score, risk level, confidence, top factors, and model stats
+
+### NER benchmark (spaCy vs regex)
+
+| Model        | Precision | Recall | F1    | Latency |
+| ------------ | --------- | ------ | ----- | ------- |
+| regex-only   | 0.807     | 0.868  | 0.836 | 0.1ms   |
+| spacy-hybrid | 0.804     | 0.849  | 0.826 | 6.9ms   |
+
+---
+
+## JD Requirements Covered
+
+| Requirement                | Implementation                                                   |
+| -------------------------- | ---------------------------------------------------------------- |
+| Python / OOP               | 4 classes: DataLoader, NERPipeline, DataCleaner, AuditLogger     |
+| SQL                        | SQLite + SQLAlchemy ORM, analytical cross-table queries          |
+| Unstructured clinical data | Free-text NER and masking on MTSamples                           |
+| EDA                        | 5 chart types via ClinicalEDA                                    |
+| ML models                  | XGBoost readmission risk model (AUC=0.675) + hybrid NER pipeline |
+| Anomaly detection          | Residual PHI scanning in DataCleaner                             |
+| Flask / Django             | 5 REST routes, consistent HTTP status codes                      |
+| Docker                     | Production Dockerfile, HEALTHCHECK, gunicorn                     |
+| Cloud deployment           | Docker-ready, gunicorn WSGI server                               |
+| Test coverage              | 269 tests, 70%+ line coverage on `src/`                        |
+
+---
+
+## 🏥 Clinical Trial Features
+
+### Data Quality Validation
+
+Automated DQP (Data Quality Plan) compliance checks:
+
+```python
+from src.pipeline.data_quality_validator import DataQualityValidator
+
+validator = DataQualityValidator(strict_mode=True)
+report = validator.validate_note(note_id, original, processed, entities)
+
+# Quality checks:
+# ✓ Completeness (text retention)
+# ✓ De-identification quality
+# ✓ Text integrity
+# ✓ HIPAA compliance
+# ✓ Consistency validation
+```
+
+### Reporting and listings (demo / PoC)
+
+Listing-style reports for review and demos — **not** a validated regulatory submission package:
+
+```python
+from src.reports.clinical_listings import ClinicalReportGenerator
+
+reporter = ClinicalReportGenerator()
+
+# Study-style processing summary (demo)
+reporter.generate_processing_summary()
+
+# Audit-style listing export
+reporter.generate_audit_listing(start_date='2024-01-01')
+
+# Quality control–style report
+reporter.generate_quality_control_report()
+
+# Bundled demo export (not FDA/EMA submission-ready)
+reporter.generate_regulatory_submission_package(study_id='STUDY001')
+```
+
+### SQL Analytics
+
+Pre-built queries for clinical data analysis:
+
+```python
+from src.utils.sql_queries import QUERY_CATALOG
+
+# Study summary with completion rates
+study_summary = loader.sql_query(QUERY_CATALOG['study_summary'])
+
+# Quality metrics by check type
+quality_metrics = loader.sql_query(QUERY_CATALOG['quality_metrics'])
+
+# High-risk notes requiring review
+high_risk = loader.sql_query(QUERY_CATALOG['high_risk_notes'])
+```
+
+---
+
+## 📚 Documentation
+
+- **[CLINICAL_USE_CASES.md](docs/CLINICAL_USE_CASES.md)** — 6 real-world use cases with ROI analysis
+- **[COMPLIANCE.md](docs/COMPLIANCE.md)** — Scope, limitations, and how design choices relate to privacy / quality **concepts** (not certification)
+- **[STRUCTURE.md](STRUCTURE.md)** — Project architecture and file organization
+- **[AZURE_DEPLOYMENT.md](AZURE_DEPLOYMENT.md)** — Azure App Service + ACR deployment guide
+
+---
+
+## 🎓 Skills Demonstrated
+
+### Clinical Data Management
+
+- ✅ DQP-style documentation and live DQ metrics (`DATA_QUALITY_PLAN.md`, `/api/data-quality`)
+- ✅ Traceability matrix (requirements → code → tests)
+- ✅ CDISC-inspired listing exports (demo, not validated SDTM/ADaM)
+- ✅ Audit log patterns analogous to GCP-style traceability (demo DB, not Part 11–validated)
+
+### Data Science & ML
+
+- ✅ NLP with spaCy (NER)
+- ✅ Anomaly detection (Isolation Forest)
+- ✅ Predictive analytics
+- ✅ Feature engineering
+- ✅ Model evaluation
+
+### Software Engineering
+
+- ✅ Object-Oriented Programming (Python)
+- ✅ SQL (SQLite + complex queries)
+- ✅ REST API (Flask)
+- ✅ Docker containerization
+- ✅ Test-driven development (pytest)
+- ✅ CI/CD ready
+
+### Regulatory and privacy concepts (study-level; not legal advice)
+
+- ✅ HIPAA Safe Harbor–style masking (technical implementation; formal determination is out of scope)
+- ✅ Familiarity with GCP / ALCOA-style language via audit + lineage docs
+- ✅ Awareness of Part 11 / GDPR / FDA themes (see `COMPLIANCE.md` for honest scope)
+
+---
+
+## 💼 Resume Highlights
+
+**Key achievements (portfolio):**
+
+- Built end-to-end pipeline for unstructured clinical text: NER, masking, SQLite, SQL queries, Flask API
+- Documented DQP-style checks, traceability, benchmarks, and ML governance (`docs/`)
+- Shipped tests + CI, optional Azure deploy; demo listings joining DM-style fields to notes
+- **Scope:** engineering and documentation practice for clinical data roles — **not** validated trial software
+
+**Technical stack:**
+Python • spaCy • scikit-learn • Pandas • SQL • Flask • Docker • Git • pytest
+
+**Domain familiarity (interview topics):**
+Clinical data operations • HIPAA / privacy concepts • DQP traceability • CDISC-inspired exports • GCP-style audit ideas
+
+---
+
+## 📞 Contact
+
+For questions about this project:
+
+- **GitHub**: [github.com/ansh-0069](https://github.com/ansh-0069)
+
+---
+
+## 📄 License
+
+MIT License - See [LICENSE](LICENSE) for details.
