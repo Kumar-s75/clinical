@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClinicalNER - Review Queue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#060708;
+  --paper:#f2f4ef;
+  --line:rgba(242,244,239,.14);
+  --muted:rgba(242,244,239,.62);
+  --signal:#c8ff45;
+  --soft:rgba(200,255,69,.12);
+  --danger:#ff7d7d;
+  --ok:#64e291;
+  --mono:"IBM Plex Mono",monospace;
+  --display:"Fraunces",serif;
+  --sans:"Instrument Sans",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:var(--sans);
+  background:
+    radial-gradient(1200px 680px at 88% -10%,rgba(200,255,69,.12),transparent 62%),
+    radial-gradient(920px 520px at -10% 38%,rgba(82,114,255,.14),transparent 58%),
+    var(--ink);
+  color:var(--paper);
+  padding:4.5rem 5vw 110px;
+}
+.hero .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--signal)}
+.hero h1{margin-top:10px;font-family:var(--display);font-size:clamp(34px,5.2vw,72px);line-height:.95;letter-spacing:-.03em}
+.hero p{margin-top:14px;max-width:64ch;color:var(--muted);line-height:1.7}
+.controls{
+  margin-top:20px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.sub-controls{
+  margin-top:10px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.toggle{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-family:var(--mono);
+  font-size:11px;
+  color:rgba(242,244,239,.84);
+}
+.toggle input{accent-color:#c8ff45}
+.status-pill{
+  border:1px solid var(--line);
+  background:rgba(14,16,18,.92);
+  color:rgba(242,244,239,.84);
+  font-family:var(--mono);
+  font-size:11px;
+  padding:8px 10px;
+}
+input, textarea, button, select {
+  font-family:var(--mono);
+  font-size:12px;
+  border:1px solid var(--line);
+  background:rgba(14,16,18,.92);
+  color:var(--paper);
+  padding:10px 12px;
+}
+input, textarea, select { outline:none; }
+input:focus-visible, textarea:focus-visible, button:focus-visible, select:focus-visible {
+  outline:2px solid rgba(200,255,69,.72);
+  outline-offset:2px;
+}
+button{cursor:pointer;text-transform:uppercase;letter-spacing:.1em;font-size:10px}
+button:hover{background:var(--soft);border-color:rgba(200,255,69,.45)}
+button.primary{background:var(--signal);color:#111510;border-color:transparent;font-weight:700}
+.summary {
+  margin-top:24px;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:1px;
+  background:var(--line);
+}
+.metric{background:rgba(10,12,13,.96);padding:16px}
+.metric .k{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(242,244,239,.45)}
+.metric .v{margin-top:8px;font-family:var(--display);font-size:clamp(26px,4vw,52px);line-height:.95;color:var(--signal)}
+.queue-tools{
+  margin-top:18px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.queue-tools .hint{
+  font-family:var(--mono);
+  font-size:11px;
+  color:rgba(242,244,239,.62);
+}
+.queue {
+  margin-top:28px;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.card{
+  border:1px solid var(--line);
+  background:rgba(10,12,13,.96);
+  padding:14px;
+}
+.card-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.badge{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:5px 8px;border:1px solid var(--line);color:rgba(242,244,239,.88);background:rgba(14,16,18,.92)}
+.badge-low{border-color:rgba(100,226,145,.45);color:var(--ok);background:rgba(100,226,145,.1)}
+.badge-medium{border-color:rgba(255,200,100,.5);color:#ffd28a;background:rgba(255,200,100,.1)}
+.badge-high{border-color:rgba(255,125,125,.42);color:var(--danger);background:rgba(255,125,125,.1)}
+.badge-veryhigh{border-color:rgba(255,90,90,.55);color:#ff9a9a;background:rgba(255,60,60,.14)}
+.diff-link{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--signal);text-decoration:none;padding:5px 8px;border:1px solid rgba(200,255,69,.35);background:rgba(200,255,69,.08);white-space:nowrap;transition:background .15s,border-color .15s}
+.diff-link:hover{background:rgba(200,255,69,.18);border-color:rgba(200,255,69,.6)}
+.meta{margin-top:8px;font-family:var(--mono);font-size:11px;color:rgba(242,244,239,.75)}
+.preview{
+  margin-top:10px;
+  border:1px solid var(--line);
+  background:rgba(16,18,20,.95);
+  font-family:var(--mono);
+  font-size:12px;
+  line-height:1.65;
+  color:rgba(242,244,239,.88);
+  padding:10px;
+  max-height:220px;
+  overflow:auto;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.actions button[data-decision="approved"]{border-color:rgba(100,226,145,.45);color:var(--ok)}
+.empty{
+  margin-top:24px;
+  border:1px solid var(--line);
+  background:rgba(10,12,13,.95);
+  padding:20px;
+  color:var(--muted);
+  font-family:var(--mono);
+}
+.error{
+  margin-top:14px;
+  border:1px solid rgba(255,125,125,.45);
+  background:rgba(255,125,125,.1);
+  color:#ffb0b0;
+  font-family:var(--mono);
+  padding:10px 12px;
+  font-size:12px;
+}
+@media(max-width:980px){.queue{grid-template-columns:1fr}.summary{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:680px){.summary{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+{% include "_ops_shell.html" %}
+
+<section class="hero">
+  <div class="eyebrow">Human In The Loop</div>
+  <h1>Review Queue</h1>
+  <p>Review notes flagged for PHI density. Severity badges use entity counts (5–7 = medium, 8–10 = high, 11+ = very high). Default queue includes 5+ entities; tighten to 8+ if you only want the densest notes.</p>
+  <div class="controls">
+    <input id="reviewer" type="text" placeholder="Reviewer name (required for traceability)" value="clinical.reviewer@company.com" style="min-width:320px;">
+    <button id="refresh" class="primary" type="button">Refresh Queue</button>
+  </div>
+  <div class="sub-controls">
+    <input id="admin-token" type="password" placeholder="Admin backfill token" style="min-width:280px;">
+    <label class="toggle" for="clear-existing"><input id="clear-existing" type="checkbox">Clear existing processed notes</label>
+    <button id="run-backfill" type="button">Run Backfill Now</button>
+    <span id="backfill-status" class="status-pill">Backfill idle</span>
+  </div>
+</section>
+
+<section class="summary">
+  <article class="metric"><div class="k">Pending review</div><div class="v" id="m-pending">0</div></article>
+  <article class="metric"><div class="k">Approved</div><div class="v" id="m-approved">0</div></article>
+  <article class="metric"><div class="k">Edited</div><div class="v" id="m-edited">0</div></article>
+  <article class="metric"><div class="k">Rejected</div><div class="v" id="m-rejected">0</div></article>
+</section>
+
+<section class="queue-tools">
+  <label class="toggle" for="queue-threshold">API threshold
+    <select id="queue-threshold" style="min-width:200px;">
+      <option value="5" selected>5+ entities (medium+)</option>
+      <option value="8">8+ entities (high only)</option>
+      <option value="10">10+ entities</option>
+    </select>
+  </label>
+  <input id="queue-search" type="text" placeholder="Filter by note id or text" style="min-width:260px;">
+  <input id="queue-min-entities" type="number" min="0" step="1" placeholder="Min entities (client filter)" style="width:190px;">
+  <select id="queue-sort" style="min-width:220px;">
+    <option value="risk_desc">Sort: Highest risk first</option>
+    <option value="risk_asc">Sort: Lowest risk first</option>
+    <option value="newest">Sort: Newest processed first</option>
+    <option value="oldest">Sort: Oldest processed first</option>
+    <option value="note_desc">Sort: Highest note id first</option>
+    <option value="note_asc">Sort: Lowest note id first</option>
+  </select>
+  <button id="clear-filters" type="button">Clear Filters</button>
+  <span class="hint" id="queue-visible-count"></span>
+</section>
+
+<div id="error-box"></div>
+<div id="queue-root" class="queue"></div>
+<div id="empty-root" class="empty" style="display:none;">No notes currently require manual review. Queue is clear.</div>
+
+<script>
+const queueRoot = document.getElementById('queue-root');
+const emptyRoot = document.getElementById('empty-root');
+const errorBox = document.getElementById('error-box');
+const reviewerInput = document.getElementById('reviewer');
+const adminTokenInput = document.getElementById('admin-token');
+const clearExistingInput = document.getElementById('clear-existing');
+const runBackfillBtn = document.getElementById('run-backfill');
+const backfillStatus = document.getElementById('backfill-status');
+const queueSearchInput = document.getElementById('queue-search');
+const queueMinEntitiesInput = document.getElementById('queue-min-entities');
+const queueSortInput = document.getElementById('queue-sort');
+const queueThresholdSelect = document.getElementById('queue-threshold');
+const clearFiltersBtn = document.getElementById('clear-filters');
+const queueVisibleCount = document.getElementById('queue-visible-count');
+
+const EMPTY_QUEUE_MESSAGE = 'No notes currently require manual review. Queue is clear.';
+const FILTER_EMPTY_MESSAGE = 'No notes match the current filters.';
+let allQueueItems = [];
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function shortText(text, maxLen = 900) {
+  const t = String(text || '');
+  if (t.length <= maxLen) return t;
+  return t.slice(0, maxLen) + '\n\n[truncated for queue view]';
+}
+
+function setError(message) {
+  if (!message) {
+    errorBox.innerHTML = '';
+    return;
+  }
+  errorBox.innerHTML = '<div class="error">' + escapeHtml(message) + '</div>';
+}
+
+async function parseApiResponse(res) {
+  const raw = await res.text();
+  let payload = null;
+  try {
+    payload = raw ? JSON.parse(raw) : {};
+  } catch (_) {
+    if (/<!doctype html|<html/i.test(raw)) {
+      throw new Error('Server returned HTML instead of JSON. Check deployment health and API logs.');
+    }
+    throw new Error(raw || 'Invalid API response');
+  }
+  return payload;
+}
+
+function setSummary(summary) {
+  const byDecision = summary.by_decision || {};
+  document.getElementById('m-pending').textContent = Number(summary.pending || 0).toLocaleString();
+  document.getElementById('m-approved').textContent = Number(byDecision.approved || 0).toLocaleString();
+  document.getElementById('m-edited').textContent = Number(byDecision.edited || 0).toLocaleString();
+  document.getElementById('m-rejected').textContent = Number(byDecision.rejected || 0).toLocaleString();
+}
+
+function toNum(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function toTime(value) {
+  const ts = Date.parse(String(value || ''));
+  return Number.isFinite(ts) ? ts : 0;
+}
+
+/** PHI-density tiers for display (aligned with stats: dashboard "high" often uses 8+). */
+function riskTier(entityCount) {
+  const n = Number(entityCount);
+  if (!Number.isFinite(n)) {
+    return { label: 'Unknown', cls: 'badge' };
+  }
+  if (n < 5) {
+    return { label: 'Low', cls: 'badge badge-low' };
+  }
+  if (n < 8) {
+    return { label: 'Medium', cls: 'badge badge-medium' };
+  }
+  if (n < 11) {
+    return { label: 'High', cls: 'badge badge-high' };
+  }
+  return { label: 'Very high', cls: 'badge badge-veryhigh' };
+}
+
+function setQueueCount(visible, total) {
+  queueVisibleCount.textContent = `Showing ${visible} of ${total}`;
+}
+
+function getQueueView(items) {
+  const term = String(queueSearchInput.value || '').trim().toLowerCase();
+  const minEntities = queueMinEntitiesInput.value === ''
+    ? null
+    : Math.max(0, parseInt(queueMinEntitiesInput.value, 10) || 0);
+  const sortMode = queueSortInput.value;
+
+  let next = items.slice();
+
+  if (term) {
+    next = next.filter((item) => {
+      const noteId = String(item.note_id || '').toLowerCase();
+      const text = String(item.masked_text || '').toLowerCase();
+      return noteId.includes(term) || text.includes(term);
+    });
+  }
+
+  if (minEntities !== null) {
+    next = next.filter((item) => toNum(item.entity_count) >= minEntities);
+  }
+
+  next.sort((a, b) => {
+    if (sortMode === 'risk_asc') return toNum(a.entity_count) - toNum(b.entity_count);
+    if (sortMode === 'newest') return toTime(b.processed_at) - toTime(a.processed_at);
+    if (sortMode === 'oldest') return toTime(a.processed_at) - toTime(b.processed_at);
+    if (sortMode === 'note_asc') return toNum(a.note_id) - toNum(b.note_id);
+    if (sortMode === 'note_desc') return toNum(b.note_id) - toNum(a.note_id);
+    return toNum(b.entity_count) - toNum(a.entity_count);
+  });
+
+  return next;
+}
+
+function refreshQueueView() {
+  const visibleItems = getQueueView(allQueueItems);
+  emptyRoot.textContent = allQueueItems.length && !visibleItems.length
+    ? FILTER_EMPTY_MESSAGE
+    : EMPTY_QUEUE_MESSAGE;
+  setQueueCount(visibleItems.length, allQueueItems.length);
+  renderQueue(visibleItems);
+}
+
+function renderQueue(items) {
+  queueRoot.innerHTML = '';
+  if (!items.length) {
+    emptyRoot.style.display = 'block';
+    return;
+  }
+  emptyRoot.style.display = 'none';
+
+  for (const item of items) {
+    const tier = riskTier(item.entity_count);
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.innerHTML = [
+      '<div class="card-head">',
+      '  <strong>Note #' + escapeHtml(item.note_id) + '</strong>',
+      '  <div style="display:flex;gap:8px;align-items:center;">',
+      '    <span class="' + tier.cls + '">' + escapeHtml(tier.label) + '</span>',
+      '    <a class="diff-link" href="/report/' + encodeURIComponent(item.note_id) + '" target="_blank" rel="noopener">View Diff ↗</a>',
+      '  </div>',
+      '</div>',
+      '<div class="meta">Entities: ' + escapeHtml(item.entity_count) + ' | Processed: ' + escapeHtml(item.processed_at || '-') + '</div>',
+      '<div class="preview">' + escapeHtml(shortText(item.masked_text || '')) + '</div>',
+      '<textarea data-comments rows="3" placeholder="Optional reviewer comment..."></textarea>',
+      '<div class="actions">',
+      '  <button data-decision="approved" type="button">Approve</button>',
+      '  <button data-decision="edited" type="button">Mark Edited</button>',
+      '  <button data-decision="rejected" type="button">Reject</button>',
+      '</div>'
+    ].join('');
+
+    card.querySelectorAll('[data-decision]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const reviewer = reviewerInput.value.trim();
+        if (!reviewer) {
+          setError('Reviewer name is required before submitting decisions.');
+          return;
+        }
+
+        btn.disabled = true;
+        const previous = btn.textContent;
+        btn.textContent = 'Saving...';
+
+        const comments = card.querySelector('[data-comments]').value.trim();
+        try {
+          const res = await fetch('/api/review/decision', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              note_id: item.note_id,
+              decision: btn.dataset.decision,
+              reviewer,
+              comments
+            })
+          });
+
+          const payload = await parseApiResponse(res);
+          if (!res.ok || payload.error) {
+            throw new Error(payload.error || 'Failed to submit decision');
+          }
+
+          await refreshAll();
+        } catch (err) {
+          setError(err.message || 'Decision submission failed');
+          btn.disabled = false;
+          btn.textContent = previous;
+        }
+      });
+    });
+
+    queueRoot.appendChild(card);
+  }
+}
+
+async function refreshAll() {
+  setError('');
+  try {
+    const th = queueThresholdSelect ? queueThresholdSelect.value : '5';
+    const [queueRes, summaryRes] = await Promise.all([
+      fetch('/api/review/queue?limit=100&min_entity_count=' + encodeURIComponent(th)),
+      fetch('/api/review/summary')
+    ]);
+
+    const [queuePayload, summaryPayload] = await Promise.all([
+      parseApiResponse(queueRes),
+      parseApiResponse(summaryRes)
+    ]);
+
+    if (!queueRes.ok || queuePayload.error) {
+      throw new Error(queuePayload.error || 'Unable to load review queue');
+    }
+    if (!summaryRes.ok || summaryPayload.error) {
+      throw new Error(summaryPayload.error || 'Unable to load review summary');
+    }
+
+    allQueueItems = queuePayload.items || [];
+    refreshQueueView();
+    setSummary(summaryPayload);
+  } catch (err) {
+    allQueueItems = [];
+    refreshQueueView();
+    setSummary({ pending: 0, by_decision: {} });
+    setError(err.message || 'Failed to refresh queue');
+  }
+}
+
+document.getElementById('refresh').addEventListener('click', refreshAll);
+queueSearchInput.addEventListener('input', refreshQueueView);
+queueMinEntitiesInput.addEventListener('input', refreshQueueView);
+queueSortInput.addEventListener('change', refreshQueueView);
+if (queueThresholdSelect) {
+  queueThresholdSelect.addEventListener('change', refreshAll);
+}
+clearFiltersBtn.addEventListener('click', () => {
+  queueSearchInput.value = '';
+  queueMinEntitiesInput.value = '';
+  queueSortInput.value = 'risk_desc';
+  if (queueThresholdSelect) queueThresholdSelect.value = '5';
+  refreshAll();
+});
+
+async function pollBackfill(jobId, adminToken, adminUser) {
+  const maxAttempts = 120;
+  const delayMs = 2000;
+
+  for (let i = 0; i < maxAttempts; i += 1) {
+    const res = await fetch('/api/admin/backfill-status/' + encodeURIComponent(jobId), {
+      headers: {
+        'X-Admin-Token': adminToken,
+        'Authorization': 'Bearer ' + adminToken,
+        'X-Admin-User': adminUser
+      }
+    });
+
+    const payload = await parseApiResponse(res);
+    if (!res.ok || payload.error) {
+      throw new Error(payload.error || 'Unable to fetch backfill status');
+    }
+
+    const job = payload.job || {};
+    const status = String(job.status || 'unknown');
+    const processed = Number(job.processed_notes || 0);
+    const total = Number(job.total_notes || 0);
+    const pct = Number(job.progress_pct || 0);
+    backfillStatus.textContent = 'Backfill ' + status + ' (' + processed + '/' + total + ', ' + pct.toFixed(1) + '%)';
+
+    if (status === 'completed') {
+      return;
+    }
+    if (status === 'failed') {
+      throw new Error(job.error || 'Backfill failed');
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+
+  throw new Error('Backfill polling timed out');
+}
+
+runBackfillBtn.addEventListener('click', async () => {
+  const reviewer = reviewerInput.value.trim();
+  const adminToken = adminTokenInput.value.trim();
+
+  if (!reviewer) {
+    setError('Reviewer name is required before starting backfill.');
+    return;
+  }
+  if (!adminToken) {
+    setError('Admin backfill token is required.');
+    return;
+  }
+
+  setError('');
+  runBackfillBtn.disabled = true;
+  const oldText = runBackfillBtn.textContent;
+  runBackfillBtn.textContent = 'Starting...';
+  backfillStatus.textContent = 'Submitting backfill job...';
+
+  try {
+    const res = await fetch('/api/admin/backfill-processed', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Token': adminToken,
+        'Authorization': 'Bearer ' + adminToken,
+        'X-Admin-User': reviewer
+      },
+      body: JSON.stringify({
+        clear_existing: Boolean(clearExistingInput.checked),
+        admin_token: adminToken
+      })
+    });
+
+    const payload = await parseApiResponse(res);
+    if (!res.ok || payload.error) {
+      throw new Error(payload.error || 'Unable to start backfill');
+    }
+
+    const jobId = payload.job && payload.job.job_id;
+    if (!jobId) {
+      throw new Error('Backfill job id missing from response');
+    }
+
+    backfillStatus.textContent = 'Backfill queued (job ' + jobId.slice(0, 8) + ')';
+    runBackfillBtn.textContent = 'Running...';
+
+    await pollBackfill(jobId, adminToken, reviewer);
+    backfillStatus.textContent = 'Backfill completed. Refreshing queue...';
+    await refreshAll();
+    backfillStatus.textContent = 'Backfill completed successfully';
+  } catch (err) {
+    backfillStatus.textContent = 'Backfill failed';
+    setError(err.message || 'Backfill failed');
+  } finally {
+    runBackfillBtn.disabled = false;
+    runBackfillBtn.textContent = oldText;
+  }
+});
+
+refreshAll();
+</script>
+</body>
+</html>

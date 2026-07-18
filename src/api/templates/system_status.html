@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClinicalNER · System Status</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+:root { --ink:#060708; --paper:#f2f4ef; --line:rgba(242,244,239,.14); --muted:rgba(242,244,239,.62); --signal:#c8ff45; --ok:#53e08a; --soft:rgba(200,255,69,.15); --mono:"IBM Plex Mono",monospace; --display:"Fraunces",serif; --sans:"Instrument Sans",sans-serif; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:radial-gradient(1200px 700px at 85% -10%,rgba(200,255,69,.12),transparent 62%),radial-gradient(1000px 500px at -12% 30%,rgba(82,114,255,.14),transparent 58%),var(--ink);color:var(--paper);padding:5rem 5vw 110px}
+.hero .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--signal)}
+.hero h1{margin-top:12px;font-family:var(--display);font-size:clamp(34px,5.2vw,72px);line-height:.95;letter-spacing:-.03em}
+.hero p{margin-top:14px;color:var(--muted);max-width:56ch;line-height:1.7}
+.story-grid{margin-top:30px;display:grid;grid-template-columns:1.1fr 1fr;gap:1px;background:var(--line)}
+.story-fixed{background:rgba(10,12,13,.95);min-height:66vh;position:sticky;top:0;display:grid;place-items:center}
+.story-badge{width:min(40vw,320px);aspect-ratio:1/1;border:1px solid rgba(200,255,69,.3);border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:clamp(34px,6vw,78px);color:var(--signal)}
+.story-flow{background:rgba(10,12,13,.95)}
+.story-step{min-height:52vh;padding:42px 24px;display:flex;flex-direction:column;justify-content:center;border-top:1px solid rgba(242,244,239,.08);opacity:0;transform:translateY(34px)}
+.story-step h3{font-family:var(--display);font-size:clamp(26px,3.6vw,46px);line-height:.95}
+.story-step p{margin-top:10px;max-width:34ch;color:var(--muted);line-height:1.7}
+.status-grid{margin-top:30px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line)}
+.card{background:rgba(10,12,13,.95);padding:22px 18px}
+.card .k{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(242,244,239,.45)}
+.card .v{margin-top:10px;font-family:var(--display);font-size:clamp(30px,4vw,58px);line-height:.95;color:var(--signal)}
+.panel{margin-top:28px;border:1px solid var(--line);background:rgba(10,12,13,.95);padding:18px}
+.panel h2{font-family:var(--display);font-size:28px;letter-spacing:-.02em}
+.panel p{margin-top:10px;color:var(--muted);line-height:1.7}
+.telemetry-grid{margin-top:14px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line)}
+.telemetry{background:rgba(9,11,12,.95);padding:12px}
+.telemetry .k{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(242,244,239,.45)}
+.telemetry .v{margin-top:6px;font-family:var(--mono);font-size:12px;color:rgba(242,244,239,.92);word-break:break-word}
+.routes{margin-top:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line)}
+.route{background:rgba(9,11,12,.95);padding:12px;font-family:var(--mono);font-size:11px;color:rgba(242,244,239,.84)}
+.route span{display:block;color:var(--ok);margin-bottom:4px}
+.dock{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px;padding:10px;border:1px solid var(--line);background:rgba(8,10,11,.84);backdrop-filter:blur(14px)}
+.dock a{color:rgba(242,244,239,.64);text-decoration:none;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;border:1px solid transparent;padding:9px 12px}
+.dock a.active,.dock a:hover{color:var(--paper);border-color:rgba(200,255,69,.42);background:var(--soft)}
+@media(max-width:980px){.status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.routes{grid-template-columns:1fr}.telemetry-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.story-grid{grid-template-columns:1fr}.story-fixed{position:relative;min-height:34vh}.status-grid{grid-template-columns:1fr}.dock{left:10px;right:10px;transform:none;width:calc(100vw - 20px);overflow-x:auto}.dock a{white-space:nowrap}}
+</style>
+</head>
+<body>
+{% include "_ops_shell.html" %}
+<section class="hero animate-up">
+  <div class="eyebrow">Runtime Reliability</div>
+  <h1>System Status</h1>
+  <p>Live operational view of health checks, throughput metrics, and service integrity signals from active endpoints.</p>
+</section>
+
+<section class="story-grid" id="story-grid">
+  <aside class="story-fixed"><div class="story-badge" id="story-badge">01</div></aside>
+  <div class="story-flow">
+    <article class="story-step" data-step="01"><h3>Probe service
+health first.</h3><p>Runtime liveness is sampled before any advanced metrics so failures surface immediately.</p></article>
+    <article class="story-step" data-step="02"><h3>Hydrate throughput
+telemetry.</h3><p>Processed volume and audit intensity are then animated into counters for quick status reading.</p></article>
+    <article class="story-step" data-step="03"><h3>Publish system
+readiness state.</h3><p>A single operational headline makes release confidence explicit for portfolio presentation.</p></article>
+  </div>
+</section>
+
+<section class="status-grid">
+  <article class="card animate-up"><div class="k">Service</div><div class="v" id="service-name">-</div></article>
+  <article class="card animate-up"><div class="k">Health</div><div class="v" id="service-status">-</div></article>
+  <article class="card animate-up"><div class="k">Processed Notes</div><div class="v" id="proc-count">0</div></article>
+  <article class="card animate-up"><div class="k">Audit Events</div><div class="v" id="audit-count">0</div></article>
+</section>
+
+<section class="panel animate-up">
+  <h2 id="overall-status">Checking status...</h2>
+  <p>Monitored endpoints are sampled and displayed below for quick operational diagnostics.</p>
+  <div class="telemetry-grid">
+    <div class="telemetry"><div class="k">Model / Image Tag</div><div class="v" id="t-model">unknown</div></div>
+    <div class="telemetry"><div class="k">App Started</div><div class="v" id="t-started">-</div></div>
+    <div class="telemetry"><div class="k">Last Refresh</div><div class="v" id="t-refresh">-</div></div>
+    <div class="telemetry"><div class="k">API Latency</div><div class="v" id="t-latency">-</div></div>
+    <div class="telemetry"><div class="k">Failure Rate</div><div class="v" id="t-failure">0.0%</div></div>
+  </div>
+  <div class="routes">
+    <div class="route"><span>GET</span>/health</div>
+    <div class="route"><span>GET</span>/api/stats</div>
+    <div class="route"><span>POST</span>/api/deidentify</div>
+    <div class="route"><span>POST</span>/api/anomaly-scan</div>
+  </div>
+</section>
+
+<nav class="dock">
+  <a href="/dashboard">Dashboard</a>
+  <a href="/stats">Stats</a>
+  <a href="/api-explorer">API</a>
+  <a href="/report/summary">Report</a>
+  <a href="/system-status" class="active">Status</a>
+</nav>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+const MOTION = {
+  revealY: 30,
+  revealDuration: 0.82,
+  revealStart: 'top 88%',
+  ease: 'circ.out',
+  counterDuration: 1.25,
+  heroScale: 0.88,
+  heroOpacity: 0.14,
+  heroY: -48,
+  heroScrub: 1.25,
+  storyEnter: 0.78,
+  storyExit: 0.34,
+  storyStart: 'top 67%',
+  storyEnd: 'bottom 34%'
+};
+
+function setupAmbientSignature() {
+  gsap.to('#story-badge', {
+    boxShadow: '0 0 28px rgba(200,255,69,0.25)',
+    duration: 1.9,
+    ease: 'sine.inOut',
+    yoyo: true,
+    repeat: -1
+  });
+}
+
+function setupHeroSequence() {
+  gsap.to('.hero', {
+    scale: MOTION.heroScale,
+    opacity: MOTION.heroOpacity,
+    y: MOTION.heroY,
+    ease: 'none',
+    scrollTrigger: {
+      trigger: '.hero',
+      start: 'top top',
+      end: 'bottom top',
+      scrub: MOTION.heroScrub
+    }
+  });
+}
+
+function setupStoryPin() {
+  const badge = document.getElementById('story-badge');
+  gsap.utils.toArray('.story-step').forEach((step) => {
+    ScrollTrigger.create({
+      trigger: step,
+      start: MOTION.storyStart,
+      end: MOTION.storyEnd,
+      onEnter: () => {
+        gsap.to(step, { opacity: 1, y: 0, duration: MOTION.storyEnter, ease: MOTION.ease });
+        badge.textContent = step.dataset.step;
+      },
+      onEnterBack: () => {
+        gsap.to(step, { opacity: 1, y: 0, duration: MOTION.storyEnter, ease: MOTION.ease });
+        badge.textContent = step.dataset.step;
+      },
+      onLeaveBack: () => {
+        gsap.to(step, { opacity: 0, y: 24, duration: MOTION.storyExit, ease: 'power2.inOut' });
+      }
+    });
+  });
+}
+
+gsap.utils.toArray('.animate-up').forEach((el) => {
+  if (el.classList.contains('hero')) return;
+  gsap.fromTo(el, { opacity: 0, y: MOTION.revealY }, { opacity: 1, y: 0, duration: MOTION.revealDuration, ease: MOTION.ease, scrollTrigger: { trigger: el, start: MOTION.revealStart, once: true } });
+});
+
+function animateCount(id, target) {
+  const node = document.getElementById(id);
+  const val = { n: 0 };
+  gsap.to(val, { n: Number(target) || 0, duration: MOTION.counterDuration, ease: MOTION.ease, onUpdate: () => { node.textContent = Math.round(val.n).toLocaleString(); } });
+}
+
+async function checkStatus() {
+  const startedAt = performance.now();
+  let success = false;
+  try {
+    const [health, stats, regRes] = await Promise.all([
+      fetch('/health').then((r) => r.json()),
+      fetch('/api/stats').then((r) => r.json()),
+      fetch('/api/model-registry').then((r) => (r.ok ? r.json() : null))
+    ]);
+
+    success = true;
+    const latency = Math.max(1, Math.round(performance.now() - startedAt));
+
+    document.getElementById('service-name').textContent = health.service || '-';
+    document.getElementById('service-status').textContent = (health.status || '-').toUpperCase();
+    animateCount('proc-count', stats.processed_count || 0);
+    animateCount('audit-count', stats.total_audit_events || 0);
+    let modelLine = health.app_version || 'unknown';
+    if (regRes && regRes.active_model) {
+      const am = regRes.active_model;
+      modelLine = `${am.name || am.id} · F1 ${(am.metrics && am.metrics.f1) != null ? am.metrics.f1 : '—'}`;
+    }
+    document.getElementById('t-model').textContent = modelLine;
+    document.getElementById('t-started').textContent = health.started_at || '-';
+    document.getElementById('t-refresh').textContent = new Date().toISOString();
+    document.getElementById('t-latency').textContent = `${latency} ms`;
+    document.getElementById('overall-status').textContent = 'All Systems Operational';
+    document.getElementById('overall-status').style.color = 'var(--ok)';
+  } catch (err) {
+    document.getElementById('overall-status').textContent = 'Status Degraded';
+    document.getElementById('overall-status').style.color = '#ff9a9a';
+    document.getElementById('t-refresh').textContent = new Date().toISOString();
+  }
+
+  window.__statusSamples = window.__statusSamples || { total: 0, failures: 0 };
+  window.__statusSamples.total += 1;
+  if (!success) window.__statusSamples.failures += 1;
+  const failureRate = (window.__statusSamples.failures / Math.max(1, window.__statusSamples.total)) * 100;
+  document.getElementById('t-failure').textContent = `${failureRate.toFixed(1)}%`;
+}
+
+checkStatus();
+setInterval(checkStatus, 30000);
+setupHeroSequence();
+setupStoryPin();
+setupAmbientSignature();
+</script>
+</body>
+</html>

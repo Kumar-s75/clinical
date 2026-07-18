@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClinicalNER · Stats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+:root {
+  --ink: #060708;
+  --paper: #f2f4ef;
+  --line: rgba(242, 244, 239, 0.14);
+  --muted: rgba(242, 244, 239, 0.64);
+  --signal: #c8ff45;
+  --signal-soft: rgba(200, 255, 69, 0.16);
+  --mono: "IBM Plex Mono", monospace;
+  --display: "Fraunces", Georgia, serif;
+  --sans: "Instrument Sans", "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--sans);
+  background:
+    radial-gradient(1200px 700px at 85% -10%, rgba(200,255,69,0.14), transparent 62%),
+    radial-gradient(1000px 500px at -12% 30%, rgba(82,114,255,0.14), transparent 58%),
+    var(--ink);
+  color: var(--paper);
+  padding: 5rem 5vw 110px;
+}
+.hero .eyebrow {
+  color: var(--signal);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.hero h1 {
+  margin-top: 12px;
+  font-family: var(--display);
+  font-size: clamp(34px, 5.2vw, 72px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+.hero p {
+  margin-top: 16px;
+  max-width: 54ch;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.story-shell {
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+}
+.story-visual {
+  background: rgba(10, 12, 13, 0.95);
+  min-height: 70vh;
+  position: sticky;
+  top: 0;
+  display: grid;
+  place-items: center;
+}
+.story-ring {
+  width: min(42vw, 340px);
+  aspect-ratio: 1 / 1;
+  border: 1px solid rgba(200, 255, 69, 0.34);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--display);
+  font-size: clamp(40px, 7vw, 84px);
+  color: var(--signal);
+  background: radial-gradient(circle at center, rgba(200,255,69,0.12), transparent 65%);
+}
+.story-steps { background: rgba(10, 12, 13, 0.95); }
+.story-step {
+  min-height: 56vh;
+  padding: 56px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-top: 1px solid rgba(242, 244, 239, 0.08);
+  opacity: 0;
+  transform: translateY(36px);
+}
+.story-step h3 { font-family: var(--display); font-size: clamp(28px, 4vw, 52px); line-height: 0.96; }
+.story-step p { margin-top: 12px; max-width: 36ch; color: var(--muted); line-height: 1.7; }
+.actions { margin-top: 24px; display: flex; gap: 10px; flex-wrap: wrap; }
+button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+button:hover { background: var(--signal-soft); border-color: rgba(200,255,69,0.45); }
+button.primary { background: var(--signal); color: #101410; border-color: transparent; font-weight: 700; }
+
+.band {
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+}
+.metric {
+  background: rgba(10, 12, 13, 0.95);
+  padding: 22px 18px;
+}
+.metric-key {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: rgba(242, 244, 239, 0.46);
+}
+.metric-value {
+  margin-top: 8px;
+  font-family: var(--display);
+  font-size: clamp(30px, 4vw, 62px);
+  color: var(--signal);
+  line-height: 0.95;
+}
+
+.surface {
+  margin-top: 36px;
+  border: 1px solid var(--line);
+  background: rgba(10, 12, 13, 0.95);
+  padding: 20px;
+}
+.surface.is-loading {
+  position: relative;
+  overflow: hidden;
+}
+.surface.is-loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(200,255,69,0.12), transparent);
+  transform: translateX(-100%);
+  animation: shimmer 1.4s infinite;
+}
+pre {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: rgba(242,244,239,0.9);
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.error {
+  margin-top: 20px;
+  border: 1px solid rgba(255, 107, 107, 0.42);
+  color: #ff9a9a;
+  background: rgba(255, 107, 107, 0.12);
+  padding: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+@keyframes shimmer {
+  to { transform: translateX(100%); }
+}
+.dock {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: rgba(8, 10, 11, 0.84);
+  backdrop-filter: blur(14px);
+}
+.dock a {
+  color: rgba(242,244,239,0.64);
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  padding: 9px 12px;
+}
+.dock a.active, .dock a:hover { color: var(--paper); border-color: rgba(200,255,69,0.42); background: var(--signal-soft); }
+@media (max-width: 980px) { .band { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 760px) {
+  .story-shell { grid-template-columns: 1fr; }
+  .story-visual { position: relative; min-height: 38vh; }
+  .band { grid-template-columns: 1fr; }
+  .dock { left: 10px; right: 10px; transform: none; width: calc(100vw - 20px); overflow-x: auto; }
+  .dock a { white-space: nowrap; }
+}
+</style>
+</head>
+<body>
+{% include "_ops_shell.html" %}
+<section class="hero animate-up">
+  <div class="eyebrow">Stats Endpoint Observatory</div>
+  <h1>Raw payload,<br>premium surface.</h1>
+  <p>Live response from /api/stats rendered as a clean telemetry view, preserving full JSON for debugging and regulatory traceability.</p>
+  <div class="actions">
+    <button class="primary" id="copy-btn" type="button">Copy JSON</button>
+    <button id="download-btn" type="button">Download JSON</button>
+    <button id="refresh-btn" type="button">Refresh</button>
+  </div>
+</section>
+
+<section class="story-shell" id="story-shell">
+  <aside class="story-visual">
+    <div class="story-ring" id="story-ring">01</div>
+  </aside>
+  <div class="story-steps">
+    <article class="story-step" data-step="01"><h3>Ingest and tally
+core records.</h3><p>Each response cycle starts from note volume and processed throughput so your telemetry never loses context.</p></article>
+    <article class="story-step" data-step="02"><h3>Normalize entity
+signals.</h3><p>Entity totals are rolled up into one intensity metric to keep quality variance immediately visible.</p></article>
+    <article class="story-step" data-step="03"><h3>Expose raw payload
+with zero abstraction.</h3><p>The full JSON remains intact for compliance review and low-level troubleshooting.</p></article>
+  </div>
+</section>
+
+<section class="band">
+  <article class="metric animate-up"><div class="metric-key">Clinical Notes</div><div class="metric-value" id="m-notes">0</div></article>
+  <article class="metric animate-up"><div class="metric-key">Processed Notes</div><div class="metric-value" id="m-processed">0</div></article>
+  <article class="metric animate-up"><div class="metric-key">Entity Volume</div><div class="metric-value" id="m-entities">0</div></article>
+  <article class="metric animate-up"><div class="metric-key">Audit Events</div><div class="metric-value" id="m-audit">0</div></article>
+</section>
+
+<section class="surface animate-up">
+  <pre id="json-output">Loading statistics...</pre>
+</section>
+<div id="error-box"></div>
+
+<nav class="dock">
+  <a href="/dashboard">Dashboard</a>
+  <a href="/stats" class="active">Stats</a>
+  <a href="/api-explorer">API</a>
+  <a href="/report/summary">Report</a>
+  <a href="/system-status">Status</a>
+</nav>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+const MOTION = {
+  revealY: 30,
+  revealDuration: 0.82,
+  revealStart: 'top 88%',
+  ease: 'sine.out',
+  counterDuration: 1.25,
+  heroScale: 0.88,
+  heroOpacity: 0.14,
+  heroY: -48,
+  heroScrub: 1.25,
+  storyEnter: 0.78,
+  storyExit: 0.34,
+  storyStart: 'top 67%',
+  storyEnd: 'bottom 34%'
+};
+
+function setupAmbientSignature() {
+  gsap.to('#story-ring', {
+    y: -8,
+    duration: 2.8,
+    ease: 'sine.inOut',
+    yoyo: true,
+    repeat: -1
+  });
+}
+
+let statsData = null;
+
+async function parseApiResponse(response) {
+  const contentType = (response.headers.get('content-type') || '').toLowerCase();
+  const bodyText = await response.text();
+
+  if (contentType.includes('application/json')) {
+    try {
+      return { json: JSON.parse(bodyText), raw: bodyText, isJson: true };
+    } catch (err) {
+      return { json: null, raw: bodyText, isJson: false, parseError: err };
+    }
+  }
+
+  return { json: null, raw: bodyText, isJson: false };
+}
+
+function animateCount(id, target) {
+  const node = document.getElementById(id);
+  const val = { n: 0 };
+  gsap.to(val, {
+    n: Number(target) || 0,
+    duration: MOTION.counterDuration,
+    ease: MOTION.ease,
+    onUpdate: () => { node.textContent = Math.round(val.n).toLocaleString(); }
+  });
+}
+
+function reveal() {
+  gsap.utils.toArray('.animate-up').forEach((el) => {
+    if (el.classList.contains('hero')) return;
+    gsap.fromTo(el, { opacity: 0, y: MOTION.revealY }, {
+      opacity: 1,
+      y: 0,
+      duration: MOTION.revealDuration,
+      ease: MOTION.ease,
+      scrollTrigger: { trigger: el, start: MOTION.revealStart, once: true }
+    });
+  });
+}
+
+function setupHeroSequence() {
+  gsap.to('.hero', {
+    scale: MOTION.heroScale,
+    opacity: MOTION.heroOpacity,
+    y: MOTION.heroY,
+    ease: 'none',
+    scrollTrigger: {
+      trigger: '.hero',
+      start: 'top top',
+      end: 'bottom top',
+      scrub: MOTION.heroScrub
+    }
+  });
+}
+
+function setupStoryPin() {
+  const ring = document.getElementById('story-ring');
+  gsap.utils.toArray('.story-step').forEach((step) => {
+    ScrollTrigger.create({
+      trigger: step,
+      start: MOTION.storyStart,
+      end: MOTION.storyEnd,
+      onEnter: () => {
+        gsap.to(step, { opacity: 1, y: 0, duration: MOTION.storyEnter, ease: MOTION.ease });
+        ring.textContent = step.dataset.step;
+      },
+      onEnterBack: () => {
+        gsap.to(step, { opacity: 1, y: 0, duration: MOTION.storyEnter, ease: MOTION.ease });
+        ring.textContent = step.dataset.step;
+      },
+      onLeaveBack: () => {
+        gsap.to(step, { opacity: 0, y: 24, duration: MOTION.storyExit, ease: 'power2.inOut' });
+      }
+    });
+  });
+}
+
+async function loadStats() {
+  const surface = document.querySelector('.surface');
+  surface.classList.add('is-loading');
+  document.getElementById('json-output').textContent = 'Loading statistics...';
+  document.getElementById('error-box').innerHTML = '';
+  try {
+    const res = await fetch('/api/stats');
+    const parsed = await parseApiResponse(res);
+    const data = parsed.json;
+
+    if (!res.ok) {
+      const message = (data && data.error)
+        ? data.error
+        : `Server returned ${res.status}. ${parsed.isJson ? 'No JSON error message provided.' : 'Received non-JSON response.'}`;
+      throw new Error(message);
+    }
+
+    if (!parsed.isJson || !data) {
+      throw new Error('Stats endpoint returned non-JSON content. This usually means an old deployment, auth middleware, or startup error.');
+    }
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    statsData = data;
+    document.getElementById('json-output').textContent = JSON.stringify(data, null, 2);
+
+    const totalEntities = Object.values(data.entity_totals || {}).reduce((a, b) => a + b, 0);
+    animateCount('m-notes', data.note_count || 0);
+    animateCount('m-processed', data.processed_count || 0);
+    animateCount('m-entities', totalEntities);
+    animateCount('m-audit', data.total_audit_events || 0);
+  } catch (e) {
+    document.getElementById('json-output').textContent = 'Error loading data';
+    document.getElementById('error-box').innerHTML = `<div class="error">Failed to load statistics: ${e.message}</div>`;
+  } finally {
+    surface.classList.remove('is-loading');
+  }
+}
+
+document.getElementById('copy-btn').addEventListener('click', async (event) => {
+  const text = document.getElementById('json-output').textContent;
+  await navigator.clipboard.writeText(text);
+  const btn = event.currentTarget;
+  const old = btn.textContent;
+  btn.textContent = 'Copied';
+  setTimeout(() => { btn.textContent = old; }, 1200);
+});
+
+document.getElementById('download-btn').addEventListener('click', () => {
+  if (!statsData) return;
+  const blob = new Blob([JSON.stringify(statsData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `clinicalner-stats-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('refresh-btn').addEventListener('click', loadStats);
+
+setupHeroSequence();
+setupStoryPin();
+setupAmbientSignature();
+reveal();
+loadStats();
+</script>
+</body>
+</html>
